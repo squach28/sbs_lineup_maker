@@ -104,9 +104,23 @@ export const signup = async (req: express.Request, res: express.Response) => {
     res
       .status(500)
       .json({ message: "Something went wrong, please try again." });
+    return;
   } finally {
     client.release();
   }
 };
 
-export const logout = (req: express.Request, res: express.Response) => {};
+export const logout = (req: express.Request, res: express.Response) => {
+  try {
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    res.status(204).send();
+    return;
+  } catch (e) {
+    res
+      .status(500)
+      .json({ message: "Something went wrong, please try again." });
+    return;
+  }
+};
