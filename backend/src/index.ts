@@ -1,6 +1,8 @@
 import express from "express";
-import { authRouter } from "./routes/auth.routes";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+
+import { authRouter } from "./routes/auth.routes";
 
 dotenv.config();
 
@@ -9,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/auth", authRouter);
 

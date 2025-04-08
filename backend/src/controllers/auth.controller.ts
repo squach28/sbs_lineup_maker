@@ -2,6 +2,8 @@ import express from "express";
 import bcrypt from "bcrypt";
 import { authQueries } from "../db/queries/auth";
 import { db } from "../db/db";
+import { TokenDetails } from "../types/TokenDetails";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
 
 export const login = async (req: express.Request, res: express.Response) => {
   try {
@@ -12,22 +14,37 @@ export const login = async (req: express.Request, res: express.Response) => {
       return;
     }
 
-    const user = await db.query(authQueries.getCredentialsByEmail, [email]);
+    const result = await db.query(authQueries.getCredentialsByEmail, [email]);
 
-    if (user.rowCount === null || user.rowCount === 0) {
+    if (result.rowCount === null || result.rowCount === 0) {
       res.status(404).json({ message: "User with that email doesn't exist" });
       return;
     }
 
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      user.rows[0].password
-    );
+    const user = result.rows[0];
+
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
     if (!isPasswordCorrect) {
       res.status(400).json({ message: "Password is incorrect" });
       return;
     }
+
+    const tokenDetails: TokenDetails = {
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+    };
+    const accessToken = generateAccessToken(tokenDetails);
+    const refreshToken = generateRefreshToken(tokenDetails);
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+    });
+
     res.status(200).json({ message: "Success" });
     return;
   } catch (e) {
