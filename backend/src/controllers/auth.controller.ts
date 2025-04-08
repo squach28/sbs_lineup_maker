@@ -45,7 +45,7 @@ export const signup = async (req: express.Request, res: express.Response) => {
 
     await client.query("COMMIT");
 
-    res.status(201).json("hello");
+    res.status(201).json({ message: "Account was successfully created" });
     return;
   } catch (e) {
     console.log(e);
