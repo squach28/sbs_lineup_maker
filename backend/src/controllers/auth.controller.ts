@@ -75,7 +75,9 @@ export const signup = async (req: express.Request, res: express.Response) => {
     const existingUser = await db.query(authQueries.getUserByEmail, [email]);
 
     if (existingUser.rowCount === null || existingUser.rowCount > 0) {
-      res.status(400).json({ message: "User with email already exists" });
+      res
+        .status(400)
+        .json({ name: "email", message: "User with email already exists" });
       return;
     }
 
