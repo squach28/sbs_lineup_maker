@@ -2,8 +2,9 @@ import { Box, Button, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import validator from "validator";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { ResponseError } from "../../types/ResponseError";
+import { useAuth } from "../../context/AuthContext";
 
 type UserData = {
   email: string;
@@ -26,6 +27,8 @@ const LoginForm = () => {
   });
   const [loading, setLoading] = useState<boolean>(false);
 
+  const { login } = useAuth();
+
   const navigate = useNavigate();
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,15 +43,10 @@ const LoginForm = () => {
     });
   };
 
-  const login = async (userData: UserData): Promise<boolean> => {
+  const handleLogin = async (userData: UserData): Promise<boolean> => {
     try {
       setLoading(true);
-      await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, userData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      });
+      await login(userData);
 
       return true;
     } catch (e) {
@@ -84,7 +82,7 @@ const LoginForm = () => {
       }
     }
 
-    const result = await login(userData);
+    const result = await handleLogin(userData);
 
     if (!result) {
       return;

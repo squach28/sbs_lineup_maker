@@ -1,5 +1,10 @@
+import { Navigate, Outlet } from "react-router";
+import { useAuth } from "../context/AuthContext";
+
 const AuthRequired = () => {
-  return <div>AuthRequired</div>;
+  const { isAuthenticated } = useAuth();
+  console.log(isAuthenticated);
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
 };
 
 export default AuthRequired;
