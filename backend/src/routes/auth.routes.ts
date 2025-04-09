@@ -3,6 +3,7 @@ import {
   checkAuth,
   login,
   logout,
+  refreshToken,
   signup,
 } from "../controllers/auth.controller";
 
@@ -13,3 +14,4 @@ authRouter.post("/signup", signup);
 authRouter.post("/logout", logout);
 
 authRouter.get("/me", checkAuth);
+authRouter.post("/refresh", refreshToken);

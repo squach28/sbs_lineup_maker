@@ -7,7 +7,11 @@ import {
   generateAccessToken,
   generateRefreshToken,
   verifyAccessToken,
+  verifyRefreshToken,
 } from "../utils/jwt";
+
+const ACCESS_TOKEN_MAX_AGE = 900;
+const REFRESH_TOKEN_MAX_AGE = 2592000;
 
 export const login = async (req: express.Request, res: express.Response) => {
   try {
@@ -46,9 +50,11 @@ export const login = async (req: express.Request, res: express.Response) => {
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
+      maxAge: ACCESS_TOKEN_MAX_AGE,
     });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
+      maxAge: REFRESH_TOKEN_MAX_AGE,
     });
 
     res.status(200).json({ message: "Success" });
@@ -151,6 +157,41 @@ export const checkAuth = async (
       firstName: decoded.firstName,
       email: decoded.email,
     });
+    return;
+  } catch (e) {
+    console.log(e);
+    res
+      .status(500)
+      .json({ message: "Something went wrong, please try again." });
+    return;
+  }
+};
+
+export const refreshToken = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  try {
+    const token = req.cookies.refreshToken;
+
+    if (token === undefined) {
+      res.status(401).json({ message: "Refresh token is missing" });
+      return;
+    }
+
+    const decoded = verifyRefreshToken(token);
+    const tokenDetails: TokenDetails = {
+      id: decoded.id,
+      firstName: decoded.firstName,
+      email: decoded.email,
+    };
+
+    const newAccessToken = generateAccessToken(tokenDetails);
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      maxAge: ACCESS_TOKEN_MAX_AGE,
+    });
+    res.status(200).json({ message: "Success, new access token generated" });
     return;
   } catch (e) {
     console.log(e);
