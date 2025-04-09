@@ -60,7 +60,6 @@ export const signup = async (req: express.Request, res: express.Response) => {
   const client = await db.connect();
   try {
     const { email, firstName, lastName, password } = req.body;
-
     if (
       email === undefined ||
       password === undefined ||
