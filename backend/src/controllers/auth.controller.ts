@@ -10,8 +10,8 @@ import {
   verifyRefreshToken,
 } from "../utils/jwt";
 
-const ACCESS_TOKEN_MAX_AGE = 900;
-const REFRESH_TOKEN_MAX_AGE = 2592000;
+const ACCESS_TOKEN_MAX_AGE = 900000;
+const REFRESH_TOKEN_MAX_AGE = 2592000000;
 
 export const login = async (req: express.Request, res: express.Response) => {
   try {
@@ -47,11 +47,11 @@ export const login = async (req: express.Request, res: express.Response) => {
     };
     const accessToken = generateAccessToken(tokenDetails);
     const refreshToken = generateRefreshToken(tokenDetails);
-
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       maxAge: ACCESS_TOKEN_MAX_AGE,
     });
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: REFRESH_TOKEN_MAX_AGE,
