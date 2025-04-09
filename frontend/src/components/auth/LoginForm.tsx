@@ -1,8 +1,12 @@
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { useState } from "react";
-import { UserData } from "../../types/UserData";
 import { Link } from "react-router";
 import validator from "validator";
+
+type UserData = {
+  email: string;
+  password: string;
+};
 
 type UserDataErrors = {
   email: string;

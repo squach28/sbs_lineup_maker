@@ -1,7 +1,9 @@
 import { Box, Button, TextField, Typography } from "@mui/material";
 import React, { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import validator from "validator";
+import axios, { AxiosError } from "axios";
+import { ResponseError } from "../../types/ResponseError";
 
 type UserData = {
   firstName: string;
@@ -38,6 +40,10 @@ const SignupForm = () => {
     confirmPassword: "",
   });
 
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const navigate = useNavigate();
+
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.name;
     const value = e.target.value;
@@ -50,6 +56,44 @@ const SignupForm = () => {
     });
   };
 
+  const signup = async (userData: UserData) => {
+    try {
+      setLoading(true);
+      const user = {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        password: userData.password,
+      };
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/signup`,
+        user,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.status === 201) {
+        return true;
+      }
+    } catch (e) {
+      const error = e as AxiosError;
+      if (error.response) {
+        const { name, message } = error.response.data as ResponseError;
+        setErrors((prev) => {
+          return {
+            ...prev,
+            [name]: message,
+          };
+        });
+      }
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSignupClicked = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const errs: UserDataErrors = {
@@ -59,15 +103,18 @@ const SignupForm = () => {
       password: validatePassword(userData.password),
       confirmPassword: validateConfirmPassword(userData.confirmPassword),
     };
-
+    setErrors(errs);
     for (const message of Object.values(errs)) {
       if (message !== "") {
-        setErrors(errs);
         return;
       }
     }
 
-    console.log("all good");
+    signup(userData).then((result) => {
+      if (result) {
+        navigate("/login?signup=success", { replace: true });
+      }
+    });
   };
 
   const validateFirstName = (firstName: string) => {
@@ -229,8 +276,9 @@ const SignupForm = () => {
         variant="contained"
         size="large"
         onClick={handleSignupClicked}
+        disabled={loading}
       >
-        Sign up
+        {loading ? "Loading..." : "Sign up"}
       </Button>
       <Typography
         sx={{
