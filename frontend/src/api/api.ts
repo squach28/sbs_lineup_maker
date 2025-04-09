@@ -33,6 +33,8 @@ api.interceptors.response.use(
       originalRequest.retry = true;
       try {
         await refreshToken();
+        const response = await api(originalRequest);
+        return response;
       } catch (e) {
         return Promise.reject(e);
       }
