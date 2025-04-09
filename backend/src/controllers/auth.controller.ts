@@ -3,7 +3,11 @@ import bcrypt from "bcrypt";
 import { authQueries } from "../db/queries/auth";
 import { db } from "../db/db";
 import { TokenDetails } from "../types/TokenDetails";
-import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyAccessToken,
+} from "../utils/jwt";
 
 export const login = async (req: express.Request, res: express.Response) => {
   try {
@@ -121,6 +125,35 @@ export const logout = (req: express.Request, res: express.Response) => {
     res.status(204).send();
     return;
   } catch (e) {
+    res
+      .status(500)
+      .json({ message: "Something went wrong, please try again." });
+    return;
+  }
+};
+
+export const checkAuth = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  try {
+    const token = req.cookies.accessToken;
+
+    if (token === undefined) {
+      res.status(401).json({ message: "Not authenticated" });
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+
+    res.status(200).json({
+      id: decoded.id,
+      firstName: decoded.firstName,
+      email: decoded.email,
+    });
+    return;
+  } catch (e) {
+    console.log(e);
     res
       .status(500)
       .json({ message: "Something went wrong, please try again." });
