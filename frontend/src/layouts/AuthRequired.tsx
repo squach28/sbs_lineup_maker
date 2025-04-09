@@ -3,7 +3,6 @@ import { useAuth } from "../context/AuthContext";
 
 const AuthRequired = () => {
   const { isAuthenticated } = useAuth();
-  console.log(isAuthenticated);
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
 };
 
