@@ -1,7 +1,9 @@
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import validator from "validator";
+import axios, { AxiosError } from "axios";
+import { ResponseError } from "../../types/ResponseError";
 
 type UserData = {
   email: string;
@@ -22,6 +24,9 @@ const LoginForm = () => {
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const navigate = useNavigate();
 
   const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.name;
@@ -35,15 +40,57 @@ const LoginForm = () => {
     });
   };
 
-  const handleLoginClicked = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    const emailError = validateEmail(userData.email);
-    const passwordError = validatePassword(userData.password);
+  const login = async (userData: UserData): Promise<boolean> => {
+    try {
+      setLoading(true);
+      await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, userData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      });
 
-    setErrors({
-      email: emailError,
-      password: passwordError,
-    });
+      return true;
+    } catch (e) {
+      const error = e as AxiosError;
+      console.log(e);
+      if (error.response) {
+        const { name, message } = error.response.data as ResponseError;
+        setErrors((prev) => {
+          return {
+            ...prev,
+            [name]: message,
+          };
+        });
+      }
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoginClicked = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const errs: UserDataErrors = {
+      email: validateEmail(userData.email),
+      password: validatePassword(userData.password),
+    };
+
+    setErrors(errs);
+
+    for (const message of Object.values(errs)) {
+      if (message !== "") {
+        return;
+      }
+    }
+
+    const result = await login(userData);
+
+    if (!result) {
+      return;
+    }
+
+    navigate("/", { replace: true });
   };
 
   const validateEmail = (email: string) => {
@@ -87,7 +134,9 @@ const LoginForm = () => {
         error={errors.email !== ""}
         helperText={
           errors.email ? (
-            <Typography color="error">{errors.email}</Typography>
+            <Typography component="span" color="error">
+              {errors.email}
+            </Typography>
           ) : null
         }
         fullWidth
@@ -102,7 +151,9 @@ const LoginForm = () => {
         error={errors.password !== ""}
         helperText={
           errors.password ? (
-            <Typography color="error">{errors.password}</Typography>
+            <Typography component="span" color="error">
+              {errors.password}
+            </Typography>
           ) : null
         }
         fullWidth
@@ -114,8 +165,9 @@ const LoginForm = () => {
         variant="contained"
         onClick={handleLoginClicked}
         size="large"
+        disabled={loading}
       >
-        Log in
+        {loading ? "Loading..." : "Log in"}
       </Button>
       <Typography
         variant="body1"
