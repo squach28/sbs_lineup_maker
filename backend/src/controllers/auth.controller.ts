@@ -3,7 +3,15 @@ import bcrypt from "bcrypt";
 import { authQueries } from "../db/queries/auth";
 import { db } from "../db/db";
 import { TokenDetails } from "../types/TokenDetails";
-import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+} from "../utils/jwt";
+
+const ACCESS_TOKEN_MAX_AGE = 900000;
+const REFRESH_TOKEN_MAX_AGE = 2592000000;
 
 export const login = async (req: express.Request, res: express.Response) => {
   try {
@@ -26,7 +34,9 @@ export const login = async (req: express.Request, res: express.Response) => {
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
     if (!isPasswordCorrect) {
-      res.status(400).json({ message: "Password is incorrect" });
+      res
+        .status(400)
+        .json({ name: "password", message: "Password is incorrect" });
       return;
     }
 
@@ -37,12 +47,14 @@ export const login = async (req: express.Request, res: express.Response) => {
     };
     const accessToken = generateAccessToken(tokenDetails);
     const refreshToken = generateRefreshToken(tokenDetails);
-
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
+      maxAge: ACCESS_TOKEN_MAX_AGE,
     });
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
+      maxAge: REFRESH_TOKEN_MAX_AGE,
     });
 
     res.status(200).json({ message: "Success" });
@@ -60,7 +72,6 @@ export const signup = async (req: express.Request, res: express.Response) => {
   const client = await db.connect();
   try {
     const { email, firstName, lastName, password } = req.body;
-
     if (
       email === undefined ||
       password === undefined ||
@@ -76,7 +87,9 @@ export const signup = async (req: express.Request, res: express.Response) => {
     const existingUser = await db.query(authQueries.getUserByEmail, [email]);
 
     if (existingUser.rowCount === null || existingUser.rowCount > 0) {
-      res.status(400).json({ message: "User with email already exists" });
+      res
+        .status(400)
+        .json({ name: "email", message: "User with email already exists" });
       return;
     }
 
@@ -118,6 +131,70 @@ export const logout = (req: express.Request, res: express.Response) => {
     res.status(204).send();
     return;
   } catch (e) {
+    res
+      .status(500)
+      .json({ message: "Something went wrong, please try again." });
+    return;
+  }
+};
+
+export const checkAuth = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  try {
+    const token = req.cookies.accessToken;
+
+    if (token === undefined) {
+      res.status(401).json({ message: "Not authenticated" });
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+
+    res.status(200).json({
+      id: decoded.id,
+      firstName: decoded.firstName,
+      email: decoded.email,
+    });
+    return;
+  } catch (e) {
+    console.log(e);
+    res
+      .status(500)
+      .json({ message: "Something went wrong, please try again." });
+    return;
+  }
+};
+
+export const refreshToken = async (
+  req: express.Request,
+  res: express.Response
+) => {
+  try {
+    const token = req.cookies.refreshToken;
+
+    if (token === undefined) {
+      res.status(401).json({ message: "Refresh token is missing" });
+      return;
+    }
+
+    const decoded = verifyRefreshToken(token);
+    const tokenDetails: TokenDetails = {
+      id: decoded.id,
+      firstName: decoded.firstName,
+      email: decoded.email,
+    };
+
+    const newAccessToken = generateAccessToken(tokenDetails);
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      maxAge: ACCESS_TOKEN_MAX_AGE,
+    });
+    res.status(200).json({ message: "Success, new access token generated" });
+    return;
+  } catch (e) {
+    console.log(e);
     res
       .status(500)
       .json({ message: "Something went wrong, please try again." });
